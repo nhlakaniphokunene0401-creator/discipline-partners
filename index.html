@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#020617" />
+    <title>Discipline Partners (DP) - Grade 10-12 Attendance & Academic Portal</title>
+    <!-- Tailwind fallback for direct preview -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              slate: {
+                650: '#293548',
+                750: '#1e293b',
+                850: '#0f172a',
+              }
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body class="bg-slate-950 text-slate-100 min-h-screen">
+    <div id="root">
+      <noscript>You need to enable JavaScript to run Discipline Partners.</noscript>
+    </div>
+
+    <!-- Script fallback notice if opened via file:// protocol directly -->
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+        if (window.location.protocol === 'file:' && !window.__DP_LOADED__) {
+          setTimeout(() => {
+            const root = document.getElementById('root');
+            if (root && root.innerHTML.trim() === '') {
+              root.innerHTML = `
+                <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #020617; color: #f8fafc; font-family: sans-serif; padding: 20px;">
+                  <div style="max-width: 480px; background: #0f172a; border: 1px solid #334155; border-radius: 20px; padding: 24px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
+                    <div style="font-size: 40px; margin-bottom: 12px;">🛡️</div>
+                    <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 8px;">Discipline Partners (DP)</h2>
+                    <p style="font-size: 13px; color: #94a3b8; margin-bottom: 20px; line-height: 1.5;">
+                      You are opening this project directly via <code>file://</code> protocol. For instant direct preview without running a local Vite server, open <strong>standalone.html</strong>.
+                    </p>
+                    <a href="./standalone.html" style="display: inline-block; background: #059669; color: white; padding: 12px 24px; border-radius: 12px; font-weight: bold; font-size: 14px; text-decoration: none;">
+                      Open Standalone Instant Preview →
+                    </a>
+                  </div>
+                </div>
+              `;
+            }
+          }, 600);
+        }
+      });
+    </script>
+
+    <!-- Vite module entry point -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

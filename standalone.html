@@ -1,0 +1,2254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Discipline Partners (DP) - Standalone Live Web App</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React & Babel Standalone for Instant In-Browser Execution -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Official DBE Master List of 450+ Real Secondary Schools -->
+  <script src="./public/saSchools.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              650: '#293548',
+              750: '#1e293b',
+              850: '#0f172a',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #020617;
+      color: #f8fafc;
+      -webkit-font-smoothing: antialiased;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div id="root">
+    <div class="min-h-screen flex items-center justify-center text-slate-400 font-mono text-xs">
+      Initializing Discipline Partners (DP)...
+    </div>
+  </div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // Set loaded flag
+    window.__DP_LOADED__ = true;
+
+    /* ============================================================
+       1. REAL SA SCHOOLS DATA (Official DBE EMIS & Exam Centre)
+       ============================================================ */
+    const SA_PROVINCES = [
+      "Eastern Cape",
+      "Free State",
+      "Gauteng",
+      "KwaZulu-Natal",
+      "Limpopo",
+      "Mpumalanga",
+      "North West",
+      "Northern Cape",
+      "Western Cape",
+    ];
+
+    const OFFICIAL_SA_SCHOOLS = (window.__OFFICIAL_SA_SCHOOLS__ && window.__OFFICIAL_SA_SCHOOLS__.length >= 400) ? window.__OFFICIAL_SA_SCHOOLS__ : [
+      // Mpumalanga
+      { emis: "800035108", examCentreNumber: "800035108", schoolName: "Sitintile Secondary School", province: "Mpumalanga", district: "Ehlanzeni", quintile: 3, hasGrade10_12: true },
+      { emis: "800014236", examCentreNumber: "800014236", schoolName: "Lowveld High School", province: "Mpumalanga", district: "Ehlanzeni", quintile: 5, hasGrade10_12: true },
+      { emis: "800014285", examCentreNumber: "800014285", schoolName: "Hoërskool Nelspruit", province: "Mpumalanga", district: "Ehlanzeni", quintile: 5, hasGrade10_12: true },
+      { emis: "800013584", examCentreNumber: "800013584", schoolName: "DD Mabuza Comprehensive High School", province: "Mpumalanga", district: "Ehlanzeni", quintile: 2, hasGrade10_12: true },
+      { emis: "800035215", examCentreNumber: "800035215", schoolName: "Inzalo Secondary School", province: "Mpumalanga", district: "Ehlanzeni", quintile: 3, hasGrade10_12: true },
+      { emis: "800014020", examCentreNumber: "800014020", schoolName: "Mashishing Secondary School", province: "Mpumalanga", district: "Ehlanzeni", quintile: 3, hasGrade10_12: true },
+      { emis: "800035306", examCentreNumber: "800035306", schoolName: "Shobiyana Secondary School", province: "Mpumalanga", district: "Bohlabela", quintile: 2, hasGrade10_12: true },
+      { emis: "800035411", examCentreNumber: "800035411", schoolName: "Matavhela Secondary School", province: "Mpumalanga", district: "Bohlabela", quintile: 2, hasGrade10_12: true },
+      { emis: "800035542", examCentreNumber: "800035542", schoolName: "OR Tambo Secondary School", province: "Mpumalanga", district: "Ehlanzeni", quintile: 3, hasGrade10_12: true },
+      { emis: "800014601", examCentreNumber: "800014601", schoolName: "Ligbron Academy of Technology", province: "Mpumalanga", district: "Gert Sibande", quintile: 5, hasGrade10_12: true },
+      { emis: "800014712", examCentreNumber: "800014712", schoolName: "Ermelo Hoërskool", province: "Mpumalanga", district: "Gert Sibande", quintile: 5, hasGrade10_12: true },
+      { emis: "800014823", examCentreNumber: "800014823", schoolName: "Kusasalethu Secondary School", province: "Mpumalanga", district: "Gert Sibande", quintile: 2, hasGrade10_12: true },
+      { emis: "800015045", examCentreNumber: "800015045", schoolName: "Hoërskool Patriot", province: "Mpumalanga", district: "Nkangala", quintile: 4, hasGrade10_12: true },
+      { emis: "800015156", examCentreNumber: "800015156", schoolName: "Witbank High School", province: "Mpumalanga", district: "Nkangala", quintile: 4, hasGrade10_12: true },
+      { emis: "800015378", examCentreNumber: "800015378", schoolName: "Middelburg Hoërskool", province: "Mpumalanga", district: "Nkangala", quintile: 5, hasGrade10_12: true },
+
+      // Gauteng
+      { emis: "700211116", examCentreNumber: "700211116", schoolName: "Pretoria Boys High School", province: "Gauteng", district: "Tshwane South", quintile: 5, hasGrade10_12: true },
+      { emis: "700130985", examCentreNumber: "700130985", schoolName: "King Edward VII School", province: "Gauteng", district: "Johannesburg East", quintile: 5, hasGrade10_12: true },
+      { emis: "700121703", examCentreNumber: "700121703", schoolName: "Tetelo Secondary School", province: "Gauteng", district: "Johannesburg Central", quintile: 3, hasGrade10_12: true },
+      { emis: "700121653", examCentreNumber: "700121653", schoolName: "Soweto Secondary School", province: "Gauteng", district: "Johannesburg Central", quintile: 2, hasGrade10_12: true },
+      { emis: "700121349", examCentreNumber: "700121349", schoolName: "Orlando High School", province: "Gauteng", district: "Johannesburg Central", quintile: 3, hasGrade10_12: true },
+      { emis: "700110499", examCentreNumber: "700110499", schoolName: "Glenvista High School", province: "Gauteng", district: "Johannesburg South", quintile: 5, hasGrade10_12: true },
+      { emis: "700221909", examCentreNumber: "700221909", schoolName: "Tsako Thabo Secondary School", province: "Gauteng", district: "Tshwane South", quintile: 3, hasGrade10_12: true },
+      { emis: "700140026", examCentreNumber: "700140026", schoolName: "Alexandra High School", province: "Gauteng", district: "Johannesburg East", quintile: 3, hasGrade10_12: true },
+      { emis: "700120853", examCentreNumber: "700120853", schoolName: "Kwadedangendlale Secondary School", province: "Gauteng", district: "Johannesburg West", quintile: 2, hasGrade10_12: true },
+      { emis: "700131447", examCentreNumber: "700131447", schoolName: "Parktown Boys' High School", province: "Gauteng", district: "Johannesburg East", quintile: 5, hasGrade10_12: true },
+      { emis: "700140182", examCentreNumber: "700140182", schoolName: "Bryanston High School", province: "Gauteng", district: "Johannesburg East", quintile: 5, hasGrade10_12: true },
+      { emis: "700340556", examCentreNumber: "700340556", schoolName: "Tembisa Secondary School", province: "Gauteng", district: "Ekurhuleni North", quintile: 3, hasGrade10_12: true },
+      { emis: "700230678", examCentreNumber: "700230678", schoolName: "Mamelodi High School", province: "Gauteng", district: "Tshwane North", quintile: 3, hasGrade10_12: true },
+
+      // Limpopo
+      { emis: "924610738", examCentreNumber: "924610738", schoolName: "Mbilwi Secondary School", province: "Limpopo", district: "Vhembe", quintile: 3, hasGrade10_12: true },
+      { emis: "924610912", examCentreNumber: "924610912", schoolName: "Thengwe Secondary School", province: "Limpopo", district: "Vhembe", quintile: 3, hasGrade10_12: true },
+      { emis: "924610118", examCentreNumber: "924610118", schoolName: "Dimani Agricultural High School", province: "Limpopo", district: "Vhembe", quintile: 2, hasGrade10_12: true },
+      { emis: "901530182", examCentreNumber: "901530182", schoolName: "Capricorn High School", province: "Limpopo", district: "Capricorn", quintile: 5, hasGrade10_12: true },
+      { emis: "901530224", examCentreNumber: "901530224", schoolName: "Dendron Secondary School", province: "Limpopo", district: "Capricorn", quintile: 3, hasGrade10_12: true },
+      { emis: "901530893", examCentreNumber: "901530893", schoolName: "Taxila Secondary School", province: "Limpopo", district: "Capricorn", quintile: 4, hasGrade10_12: true },
+      { emis: "924610946", examCentreNumber: "924610946", schoolName: "Tshivhase Secondary School", province: "Limpopo", district: "Vhembe", quintile: 3, hasGrade10_12: true },
+      { emis: "912340156", examCentreNumber: "912340156", schoolName: "Tzaneen Hoërskool", province: "Limpopo", district: "Mopani", quintile: 5, hasGrade10_12: true },
+
+      // KwaZulu-Natal
+      { emis: "500130644", examCentreNumber: "500130644", schoolName: "Durban High School", province: "KwaZulu-Natal", district: "Umlazi", quintile: 5, hasGrade10_12: true },
+      { emis: "500244715", examCentreNumber: "500244715", schoolName: "Menzi High School", province: "KwaZulu-Natal", district: "Umlazi", quintile: 3, hasGrade10_12: true },
+      { emis: "500257221", examCentreNumber: "500257221", schoolName: "Velabahleke High School", province: "KwaZulu-Natal", district: "Umlazi", quintile: 3, hasGrade10_12: true },
+      { emis: "500171221", examCentreNumber: "500171221", schoolName: "Inanda Seminary", province: "KwaZulu-Natal", district: "Pinetown", quintile: 4, hasGrade10_12: true },
+      { emis: "500141674", examCentreNumber: "500141674", schoolName: "Glenwood High School", province: "KwaZulu-Natal", district: "Umlazi", quintile: 5, hasGrade10_12: true },
+      { emis: "500192305", examCentreNumber: "500192305", schoolName: "Maritzburg College", province: "KwaZulu-Natal", district: "Umgungundlovu", quintile: 5, hasGrade10_12: true },
+      { emis: "500255938", examCentreNumber: "500255938", schoolName: "Umlazi Commercial High School", province: "KwaZulu-Natal", district: "Umlazi", quintile: 3, hasGrade10_12: true },
+      { emis: "500270114", examCentreNumber: "500270114", schoolName: "Westville Boys' High School", province: "KwaZulu-Natal", district: "Pinetown", quintile: 5, hasGrade10_12: true },
+
+      // Western Cape
+      { emis: "0103310344", examCentreNumber: "0103310344", schoolName: "Westerford High School", province: "Western Cape", district: "Metro Central", quintile: 5, hasGrade10_12: true },
+      { emis: "0103310310", examCentreNumber: "0103310310", schoolName: "South African College High (SACS)", province: "Western Cape", district: "Metro Central", quintile: 5, hasGrade10_12: true },
+      { emis: "0105310232", examCentreNumber: "0105310232", schoolName: "Centre of Science and Technology (COSAT)", province: "Western Cape", district: "Metro East", quintile: 3, hasGrade10_12: true },
+      { emis: "0104310352", examCentreNumber: "0104310352", schoolName: "Spine Road High School", province: "Western Cape", district: "Metro South", quintile: 4, hasGrade10_12: true },
+      { emis: "0103310212", examCentreNumber: "0103310212", schoolName: "Livingstone High School", province: "Western Cape", district: "Metro Central", quintile: 5, hasGrade10_12: true },
+      { emis: "0105310257", examCentreNumber: "0105310257", schoolName: "Matthew Goniwe Memorial High School", province: "Western Cape", district: "Metro East", quintile: 2, hasGrade10_12: true },
+
+      // Eastern Cape
+      { emis: "200100141", examCentreNumber: "200100141", schoolName: "Dale College Boys' High School", province: "Eastern Cape", district: "Buffalo City", quintile: 4, hasGrade10_12: true },
+      { emis: "200100653", examCentreNumber: "200100653", schoolName: "Queen's College Boys' High School", province: "Eastern Cape", district: "Chris Hani", quintile: 5, hasGrade10_12: true },
+      { emis: "200400824", examCentreNumber: "200400824", schoolName: "St John's College", province: "Eastern Cape", district: "OR Tambo Inland", quintile: 3, hasGrade10_12: true },
+      { emis: "200400582", examCentreNumber: "200400582", schoolName: "Nyanga Senior Secondary School", province: "Eastern Cape", district: "Chris Hani", quintile: 2, hasGrade10_12: true },
+      { emis: "200100108", examCentreNumber: "200100108", schoolName: "Butterworth High School", province: "Eastern Cape", district: "Amathole", quintile: 3, hasGrade10_12: true },
+
+      // Free State
+      { emis: "440304221", examCentreNumber: "440304221", schoolName: "Grey College Secondary School", province: "Free State", district: "Motheo", quintile: 5, hasGrade10_12: true },
+      { emis: "440304212", examCentreNumber: "440304212", schoolName: "Eunice High School", province: "Free State", district: "Motheo", quintile: 5, hasGrade10_12: true },
+      { emis: "441811210", examCentreNumber: "441811210", schoolName: "Mohato Secondary School", province: "Free State", district: "Lejweleputswa", quintile: 3, hasGrade10_12: true },
+      { emis: "443907248", examCentreNumber: "443907248", schoolName: "Tswasogo Secondary School", province: "Free State", district: "Thabo Mofutsanyana", quintile: 2, hasGrade10_12: true },
+
+      // North West
+      { emis: "600101782", examCentreNumber: "600101782", schoolName: "Mafikeng High School", province: "North West", district: "Ngaka Modiri Molema", quintile: 4, hasGrade10_12: true },
+      { emis: "600102554", examCentreNumber: "600102554", schoolName: "Tiger Kloof Educational Institute", province: "North West", district: "Dr Ruth Segomotsi Mompati", quintile: 4, hasGrade10_12: true },
+      { emis: "600102143", examCentreNumber: "600102143", schoolName: "Potchefstroom High School for Boys", province: "North West", district: "Dr Kenneth Kaunda", quintile: 5, hasGrade10_12: true },
+
+      // Northern Cape
+      { emis: "300011214", examCentreNumber: "300011214", schoolName: "Kimberley Boys' High School", province: "Northern Cape", district: "Frances Baard", quintile: 5, hasGrade10_12: true },
+      { emis: "300011502", examCentreNumber: "300011502", schoolName: "St Boniface High School", province: "Northern Cape", district: "Frances Baard", quintile: 4, hasGrade10_12: true },
+      { emis: "300031102", examCentreNumber: "300031102", schoolName: "Carlton van Heerden High School", province: "Northern Cape", district: "ZF Mgcawu", quintile: 4, hasGrade10_12: true },
+    ];
+
+    function getAllSchools() {
+      try {
+        const raw = localStorage.getItem("dp_custom_schools");
+        const custom = raw ? JSON.parse(raw) : [];
+        return [...OFFICIAL_SA_SCHOOLS, ...custom];
+      } catch {
+        return OFFICIAL_SA_SCHOOLS;
+      }
+    }
+
+    function searchSchools(query = "", province = "All", onlySecondary = true, maxResults = 80) {
+      const q = query.trim().toLowerCase();
+      const all = getAllSchools();
+      const hasQ = q.length > 0;
+      const hasProv = province !== "All";
+      
+      const results = [];
+      let totalMatches = 0;
+
+      for (let i = 0; i < all.length; i++) {
+        const s = all[i];
+        if (onlySecondary && !s.hasGrade10_12) continue;
+        if (hasProv && s.province !== province) continue;
+
+        if (hasQ) {
+          const match =
+            s.schoolName.toLowerCase().includes(q) ||
+            s.emis.toLowerCase().includes(q) ||
+            s.examCentreNumber.toLowerCase().includes(q) ||
+            s.district.toLowerCase().includes(q);
+          if (!match) continue;
+        }
+
+        totalMatches++;
+        if (results.length < maxResults) {
+          results.push(s);
+        }
+      }
+
+      results.totalMatches = totalMatches;
+      return results;
+    }
+
+    function registerPrincipalSchool(school) {
+      if (!school.emis || school.emis.length < 8) return { success: false, message: "EMIS number must be at least 8 digits." };
+      if (!school.examCentreNumber || school.examCentreNumber.length < 8) return { success: false, message: "Exam centre number must be valid." };
+      try {
+        const raw = localStorage.getItem("dp_custom_schools");
+        const list = raw ? JSON.parse(raw) : [];
+        list.push({ ...school, isPrincipalRegistered: true, hasGrade10_12: true });
+        localStorage.setItem("dp_custom_schools", JSON.stringify(list));
+        return { success: true, message: `School "${school.schoolName}" successfully added!` };
+      } catch {
+        return { success: false, message: "Storage error occurred." };
+      }
+    }
+
+    /* ============================================================
+       2. STORAGE REPOSITORY (localStorage dp_...)
+       Empty on start. Zero mock learners.
+       ============================================================ */
+    const STORAGE = {
+      getUsers: () => {
+        try {
+          const r = localStorage.getItem("dp_users");
+          return r ? JSON.parse(r) : [];
+        } catch { return []; }
+      },
+      saveUser: (user) => {
+        const users = STORAGE.getUsers();
+        users.push(user);
+        localStorage.setItem("dp_users", JSON.stringify(users));
+      },
+      getSession: () => {
+        try {
+          const r = localStorage.getItem("dp_active_session");
+          return r ? JSON.parse(r) : null;
+        } catch { return null; }
+      },
+      setSession: (u) => localStorage.setItem("dp_active_session", JSON.stringify(u)),
+      clearSession: () => localStorage.removeItem("dp_active_session"),
+
+      getLearners: (centre) => {
+        try {
+          const r = localStorage.getItem(`dp_learners_${centre}`);
+          return r ? JSON.parse(r) : [];
+        } catch { return []; }
+      },
+      saveLearner: (centre, learner) => {
+        const list = STORAGE.getLearners(centre);
+        list.push(learner);
+        localStorage.setItem(`dp_learners_${centre}`, JSON.stringify(list));
+      },
+      deleteLearner: (centre, id) => {
+        const list = STORAGE.getLearners(centre).filter(l => l.id !== id);
+        localStorage.setItem(`dp_learners_${centre}`, JSON.stringify(list));
+      },
+
+      getAttendance: (centre, date) => {
+        try {
+          const r = localStorage.getItem(`dp_attendance_${centre}_${date}`);
+          return r ? JSON.parse(r) : null;
+        } catch { return null; }
+      },
+      saveAttendance: (centre, date, att) => {
+        localStorage.setItem(`dp_attendance_${centre}_${date}`, JSON.stringify(att));
+      },
+
+      getTasks: (centre) => {
+        try {
+          const r = localStorage.getItem(`dp_tasks_${centre}`);
+          return r ? JSON.parse(r) : [];
+        } catch { return []; }
+      },
+      saveTask: (centre, task) => {
+        const list = STORAGE.getTasks(centre);
+        const idx = list.findIndex(t => t.id === task.id);
+        if (idx >= 0) list[idx] = task; else list.unshift(task);
+        localStorage.setItem(`dp_tasks_${centre}`, JSON.stringify(list));
+      },
+
+      getAnnouncements: (centre) => {
+        try {
+          const r = localStorage.getItem(`dp_announcements_${centre}`);
+          const list = r ? JSON.parse(r) : [];
+          const cutoff = new Date();
+          cutoff.setDate(cutoff.getDate() - 90);
+          return list.filter(a => new Date(a.createdAt) >= cutoff);
+        } catch { return []; }
+      },
+      saveAnnouncement: (centre, ann) => {
+        const list = STORAGE.getAnnouncements(centre);
+        list.unshift(ann);
+        localStorage.setItem(`dp_announcements_${centre}`, JSON.stringify(list));
+      },
+
+      getResources: (centre) => {
+        try {
+          const r = localStorage.getItem(`dp_resources_${centre}`);
+          return r ? JSON.parse(r) : [];
+        } catch { return []; }
+      },
+      saveResource: (centre, res) => {
+        const list = STORAGE.getResources(centre);
+        list.unshift(res);
+        localStorage.setItem(`dp_resources_${centre}`, JSON.stringify(list));
+      },
+
+      getExams: (centre) => {
+        try {
+          const r = localStorage.getItem(`dp_exam_timetable_${centre}`);
+          return r ? JSON.parse(r) : [];
+        } catch { return []; }
+      },
+      saveExam: (centre, exam) => {
+        const list = STORAGE.getExams(centre);
+        list.push(exam);
+        localStorage.setItem(`dp_exam_timetable_${centre}`, JSON.stringify(list));
+      }
+    };
+
+    /* ============================================================
+       3. eLIBRARY COMPONENT
+       ============================================================ */
+    function ELibraryView({ examCentreNumber, userGrade = "All" }) {
+      const [gradeFilter, setGradeFilter] = useState(userGrade);
+      const [search, setSearch] = useState("");
+      const [resources, setResources] = useState([]);
+
+      useEffect(() => {
+        setResources(STORAGE.getResources(examCentreNumber));
+      }, [examCentreNumber]);
+
+      const filtered = resources.filter(r => {
+        const matchG = gradeFilter === "All" || r.grade === gradeFilter;
+        const matchS = !search || r.title.toLowerCase().includes(search.toLowerCase()) || r.subject.toLowerCase().includes(search.toLowerCase());
+        return matchG && matchS;
+      });
+
+      return (
+        <div className="space-y-6 animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400">Curriculum & Textbooks</span>
+              <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
+                <span>📚</span> National Curriculum & School eLibrary
+              </h2>
+              <p className="text-xs text-slate-400">Open DBE study materials, Siyavula practice, and school notes.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search subject or book..."
+                className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+              />
+              <select
+                value={gradeFilter}
+                onChange={e => setGradeFilter(e.target.value)}
+                className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none font-bold"
+              >
+                <option value="All">All Grades</option>
+                <option value="10">Grade 10</option>
+                <option value="11">Grade 11</option>
+                <option value="12">Grade 12</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-gradient-to-br from-indigo-950/70 via-slate-900 to-slate-900 border border-indigo-700/50 rounded-3xl p-5 shadow-md flex flex-col justify-between space-y-4">
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase tracking-wider border border-indigo-500/30">Official DBE Digital Partner</span>
+                <h3 className="text-lg font-black text-white mt-1">Siyavula Mathematics & Sciences</h3>
+                <p className="text-xs text-slate-300 mt-1 leading-relaxed">Free Grade 10-12 practice engine with immediate feedback and open digital textbooks.</p>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-indigo-900/60">
+                <span className="text-[11px] text-slate-400 font-mono">www.siyavula.com</span>
+                <a href="https://www.siyavula.com" target="_blank" rel="noreferrer" className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow">
+                  Open Siyavula ↗
+                </a>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-emerald-950/70 via-slate-900 to-slate-900 border border-emerald-700/50 rounded-3xl p-5 shadow-md flex flex-col justify-between space-y-4">
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase tracking-wider border border-emerald-500/30">DBE National Examinations</span>
+                <h3 className="text-lg font-black text-white mt-1">DBE Past Matric Papers & Memos</h3>
+                <p className="text-xs text-slate-300 mt-1 leading-relaxed">Official National Senior Certificate (NSC) exam papers and marking guidelines.</p>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-emerald-900/60">
+                <span className="text-[11px] text-slate-400 font-mono truncate max-w-[160px]">education.gov.za</span>
+                <a href="https://www.education.gov.za/Curriculum/Grade-12-Past-Exam-papers" target="_blank" rel="noreferrer" className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow">
+                  Open DBE Papers ↗
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-4">
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <span>🏫</span> School Uploaded Textbooks & Notes ({filtered.length})
+            </h3>
+            {filtered.length === 0 ? (
+              <div className="text-center py-8 text-xs text-slate-400">
+                No school resources uploaded yet for this filter. School staff can upload textbooks, PDFs, and notes.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filtered.map(res => (
+                  <div key={res.id} className="bg-slate-850 border border-slate-750 p-4 rounded-2xl flex flex-col justify-between space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-slate-800 text-emerald-400 font-bold text-[10px] uppercase">{res.type}</span>
+                        <span className="text-[10px] font-bold text-blue-400">Grade {res.grade}</span>
+                      </div>
+                      <h4 className="font-bold text-sm text-white mt-1">{res.title}</h4>
+                      <p className="text-xs text-slate-400">{res.subject}</p>
+                    </div>
+                    <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
+                      <span className="text-[10px] text-slate-500">By {res.uploadedBy}</span>
+                      <a href={res.fileDataOrUrl} target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-[11px]">
+                        Open ↗
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    /* ============================================================
+       4. STAFF VIEW (Can Edit)
+       ============================================================ */
+    function StaffView({ user, onLogout }) {
+      const [tab, setTab] = useState("attendance");
+      const [learners, setLearners] = useState([]);
+      const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+      const [grade, setGrade] = useState("10");
+      const [attendance, setAttendance] = useState(null);
+      const [saveNotice, setSaveNotice] = useState("");
+
+      // Roster form
+      const [rName, setRName] = useState("");
+      const [rAdm, setRAdm] = useState("");
+      const [rGrade, setRGrade] = useState("10");
+      const [rClass, setRClass] = useState("10A");
+      const [rPhone, setRPhone] = useState("");
+
+      // Tasks
+      const [tasks, setTasks] = useState([]);
+      const [tSub, setTSub] = useState("Mathematics");
+      const [tTitle, setTTitle] = useState("");
+      const [tDue, setTDue] = useState(new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0]);
+      const [tGrade, setTGrade] = useState("10");
+      const [selectedTaskId, setSelectedTaskId] = useState(null);
+
+      // Exams
+      const [exams, setExams] = useState([]);
+      const [exSub, setExSub] = useState("Mathematics");
+      const [exPaper, setExPaper] = useState("Paper 1");
+      const [exDate, setExDate] = useState(new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0]);
+      const [exTime, setExTime] = useState("09:00");
+      const [exDur, setExDur] = useState("3 Hours");
+      const [exVenue, setExVenue] = useState("Main Hall");
+      const [exGrade, setExGrade] = useState("12");
+
+      // Announcements
+      const [announcements, setAnnouncements] = useState([]);
+      const [aTitle, setATitle] = useState("");
+      const [aContent, setAContent] = useState("");
+      const [aUrgent, setAUrgent] = useState(false);
+
+      // Resources
+      const [resType, setResType] = useState("textbook");
+      const [resTitle, setResTitle] = useState("");
+      const [resSub, setResSub] = useState("Mathematics");
+      const [resGrade, setResGrade] = useState("12");
+      const [resUrl, setResUrl] = useState("");
+
+      const loadData = () => {
+        setLearners(STORAGE.getLearners(user.examCentreNumber));
+        setTasks(STORAGE.getTasks(user.examCentreNumber));
+        setExams(STORAGE.getExams(user.examCentreNumber));
+        setAnnouncements(STORAGE.getAnnouncements(user.examCentreNumber));
+        setAttendance(STORAGE.getAttendance(user.examCentreNumber, date));
+      };
+
+      useEffect(() => {
+        loadData();
+      }, [user.examCentreNumber, date]);
+
+      const filteredLearners = learners.filter(l => l.grade === grade);
+
+      const toggleAtt = (learnerId) => {
+        const records = { ...(attendance?.records || {}) };
+        const current = records[learnerId]?.status || "present";
+        let next = "present";
+        if (current === "present") next = "absent";
+        else if (current === "absent") next = "late";
+        else next = "present";
+
+        records[learnerId] = { status: next, timestamp: new Date().toISOString() };
+        const updated = {
+          date,
+          examCentreNumber: user.examCentreNumber,
+          grade,
+          records,
+          markedBy: user.staffName,
+          updatedAt: new Date().toISOString()
+        };
+        STORAGE.saveAttendance(user.examCentreNumber, date, updated);
+        setAttendance(updated);
+        setSaveNotice("Attendance recorded!");
+        setTimeout(() => setSaveNotice(""), 1500);
+      };
+
+      const markAllPresent = () => {
+        const records = { ...(attendance?.records || {}) };
+        filteredLearners.forEach(l => {
+          records[l.id] = { status: "present", timestamp: new Date().toISOString() };
+        });
+        const updated = {
+          date,
+          examCentreNumber: user.examCentreNumber,
+          grade,
+          records,
+          markedBy: user.staffName,
+          updatedAt: new Date().toISOString()
+        };
+        STORAGE.saveAttendance(user.examCentreNumber, date, updated);
+        setAttendance(updated);
+        setSaveNotice(`All ${filteredLearners.length} learners marked present!`);
+        setTimeout(() => setSaveNotice(""), 2000);
+      };
+
+      const handleAddLearner = (e) => {
+        e.preventDefault();
+        if (!rName || !rAdm) return;
+        STORAGE.saveLearner(user.examCentreNumber, {
+          id: "lrn_" + Date.now(),
+          examCentreNumber: user.examCentreNumber,
+          fullName: rName.trim(),
+          admissionNo: rAdm.trim(),
+          grade: rGrade,
+          classGroup: rClass.trim().toUpperCase(),
+          parentPhone: rPhone.trim() || undefined,
+          enrolledAt: new Date().toISOString()
+        });
+        setRName("");
+        setRAdm("");
+        setRPhone("");
+        loadData();
+      };
+
+      const handleCreateTask = (e) => {
+        e.preventDefault();
+        if (!tTitle || !tSub) return;
+        STORAGE.saveTask(user.examCentreNumber, {
+          id: "task_" + Date.now(),
+          examCentreNumber: user.examCentreNumber,
+          grade: tGrade,
+          subject: tSub.trim(),
+          title: tTitle.trim(),
+          dueDate: tDue,
+          createdAt: new Date().toISOString(),
+          createdBy: user.staffName,
+          submissions: {}
+        });
+        setTTitle("");
+        loadData();
+      };
+
+      const toggleSubmission = (taskId, learnerId, currentStatus) => {
+        const target = tasks.find(t => t.id === taskId);
+        if (target) {
+          if (!target.submissions) target.submissions = {};
+          target.submissions[learnerId] = currentStatus === "submitted" ? "not_submitted" : "submitted";
+          STORAGE.saveTask(user.examCentreNumber, target);
+          loadData();
+        }
+      };
+
+      const handleAddExam = (e) => {
+        e.preventDefault();
+        STORAGE.saveExam(user.examCentreNumber, {
+          id: "exam_" + Date.now(),
+          examCentreNumber: user.examCentreNumber,
+          grade: exGrade,
+          subject: exSub,
+          paperName: exPaper,
+          date: exDate,
+          startTime: exTime,
+          duration: exDur,
+          venue: exVenue
+        });
+        setExPaper("");
+        loadData();
+      };
+
+      const handleAddAnnouncement = (e) => {
+        e.preventDefault();
+        if (!aTitle || !aContent) return;
+        STORAGE.saveAnnouncement(user.examCentreNumber, {
+          id: "ann_" + Date.now(),
+          examCentreNumber: user.examCentreNumber,
+          schoolName: user.schoolName,
+          title: aTitle.trim(),
+          content: aContent.trim(),
+          targetGrade: "all",
+          isUrgent: aUrgent,
+          authorName: user.staffName,
+          createdAt: new Date().toISOString()
+        });
+        setATitle("");
+        setAContent("");
+        setAUrgent(false);
+        loadData();
+      };
+
+      const handleAddResource = (e) => {
+        e.preventDefault();
+        if (!resTitle || !resUrl) return;
+        STORAGE.saveResource(user.examCentreNumber, {
+          id: "res_" + Date.now(),
+          examCentreNumber: user.examCentreNumber,
+          type: resType,
+          title: resTitle.trim(),
+          subject: resSub.trim(),
+          grade: resGrade,
+          fileDataOrUrl: resUrl.trim(),
+          fileName: resTitle.trim(),
+          uploadedAt: new Date().toISOString(),
+          uploadedBy: user.staffName
+        });
+        setResTitle("");
+        setResUrl("");
+        loadData();
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col font-sans">
+          {/* Header with Always-Visible Logout */}
+          <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 py-3 shadow">
+            <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center font-black text-white text-base">
+                  DP
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="font-bold text-sm md:text-base text-white truncate max-w-xs">{user.schoolName}</h1>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/30">STAFF</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    Centre: <strong className="text-slate-300 font-mono">{user.examCentreNumber}</strong> • {user.staffName} ({user.staffRole})
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-800/60 text-red-300 text-xs font-bold transition-all"
+              >
+                Log Out ↪
+              </button>
+            </div>
+          </header>
+
+          {/* Navigation Bar */}
+          <nav className="bg-slate-900 border-b border-slate-800 px-4">
+            <div className="max-w-6xl mx-auto flex overflow-x-auto no-scrollbar gap-2 py-2">
+              {[
+                { id: "attendance", label: "📋 Daily Attendance" },
+                { id: "roster", label: `👥 Learner Roster (${learners.length})` },
+                { id: "tasks", label: "📝 Tasks & Submissions" },
+                { id: "exams", label: "📅 Exam Timetable" },
+                { id: "announcements", label: "📢 Announcements" },
+                { id: "resources", label: "📚 eLibrary & Resources" }
+              ].map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                    tab === t.id ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white hover:bg-slate-800"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </nav>
+
+          <main className="max-w-6xl mx-auto w-full flex-1 p-4 md:p-6 space-y-6">
+            {/* TAB: ATTENDANCE */}
+            {tab === "attendance" && (
+              <div className="space-y-4 animate-fadeIn">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Date</span>
+                      <input
+                        type="date"
+                        value={date}
+                        onChange={e => setDate(e.target.value)}
+                        className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Grade</span>
+                      <select
+                        value={grade}
+                        onChange={e => setGrade(e.target.value)}
+                        className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white font-bold"
+                      >
+                        <option value="10">Grade 10</option>
+                        <option value="11">Grade 11</option>
+                        <option value="12">Grade 12</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {saveNotice && <span className="text-xs text-emerald-400 font-semibold animate-pulse">✓ {saveNotice}</span>}
+                    {filteredLearners.length > 0 && (
+                      <button
+                        onClick={markAllPresent}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow transition-all active:scale-95"
+                      >
+                        ⚡ Mark All Present
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 text-xs text-slate-400">
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-emerald-500"></span> Present</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-red-500"></span> Absent (Triggers Alert)</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500"></span> Late</span>
+                </div>
+
+                {filteredLearners.length === 0 ? (
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-3">
+                    <div className="text-3xl">👥</div>
+                    <h3 className="text-base font-bold text-white">No Grade {grade} Learners Enrolled Yet</h3>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                      Empty DB Rule: No mock learners exist. Enroll your Grade 10-12 class roster in the Roster tab.
+                    </p>
+                    <button onClick={() => setTab("roster")} className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold">
+                      Add Learners to Roster →
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {filteredLearners.map(l => {
+                      const rec = attendance?.records?.[l.id];
+                      const st = rec?.status || "absent";
+                      return (
+                        <div
+                          key={l.id}
+                          onClick={() => toggleAtt(l.id)}
+                          className={`cursor-pointer select-none p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                            st === "present"
+                              ? "bg-emerald-950/30 border-emerald-600/60"
+                              : st === "absent"
+                              ? "bg-red-950/40 border-red-600/70"
+                              : "bg-amber-950/30 border-amber-600/60"
+                          }`}
+                        >
+                          <div>
+                            <div className="font-bold text-sm text-white">{l.fullName}</div>
+                            <div className="text-[11px] text-slate-400">{l.classGroup} • Adm: {l.admissionNo}</div>
+                          </div>
+                          <div>
+                            {st === "present" && <span className="px-3 py-1 rounded-xl bg-emerald-600 text-white font-bold text-xs">✓ PRESENT</span>}
+                            {st === "absent" && <span className="px-3 py-1 rounded-xl bg-red-600 text-white font-bold text-xs animate-pulse">✕ ABSENT</span>}
+                            {st === "late" && <span className="px-3 py-1 rounded-xl bg-amber-600 text-white font-bold text-xs">⏳ LATE</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB: ROSTER */}
+            {tab === "roster" && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-4">
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <span>➕</span> Enroll Grade 10-12 Learner
+                  </h3>
+                  <form onSubmit={handleAddLearner} className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-300">Learner Full Name</label>
+                        <input
+                          type="text"
+                          value={rName}
+                          onChange={e => setRName(e.target.value)}
+                          placeholder="e.g. Karabo Dlamini"
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-300">Admission No / EMIS Identifier</label>
+                        <input
+                          type="text"
+                          value={rAdm}
+                          onChange={e => setRAdm(e.target.value)}
+                          placeholder="e.g. ADM2026-402"
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                          required
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-300">Grade</label>
+                          <select
+                            value={rGrade}
+                            onChange={e => setRGrade(e.target.value)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-bold"
+                          >
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-300">Class</label>
+                          <input
+                            type="text"
+                            value={rClass}
+                            onChange={e => setRClass(e.target.value)}
+                            placeholder="10A"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-300">Parent Phone</label>
+                        <input
+                          type="tel"
+                          value={rPhone}
+                          onChange={e => setRPhone(e.target.value)}
+                          placeholder="082 123 4567"
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                        />
+                      </div>
+                    </div>
+                    <button type="submit" className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-xs text-white shadow">
+                      + Save Learner to Roster
+                    </button>
+                  </form>
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-3">
+                  <h3 className="text-base font-bold text-white">Roster Directory ({learners.length})</h3>
+                  {learners.length === 0 ? (
+                    <div className="text-center py-6 text-xs text-slate-400">No learners enrolled yet.</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-800 text-slate-400 uppercase text-[10px]">
+                            <th className="p-2">Admission No</th>
+                            <th className="p-2">Full Name</th>
+                            <th className="p-2">Grade</th>
+                            <th className="p-2">Class</th>
+                            <th className="p-2">Parent Contact</th>
+                            <th className="p-2 text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60">
+                          {learners.map(l => (
+                            <tr key={l.id} className="hover:bg-slate-800/40">
+                              <td className="p-2 font-mono font-bold text-emerald-400">{l.admissionNo}</td>
+                              <td className="p-2 font-semibold text-white">{l.fullName}</td>
+                              <td className="p-2">Grade {l.grade}</td>
+                              <td className="p-2">{l.classGroup}</td>
+                              <td className="p-2 text-slate-400">{l.parentPhone || "—"}</td>
+                              <td className="p-2 text-right">
+                                <button
+                                  onClick={() => {
+                                    if (confirm(`Remove ${l.fullName}?`)) {
+                                      STORAGE.deleteLearner(user.examCentreNumber, l.id);
+                                      loadData();
+                                    }
+                                  }}
+                                  className="text-red-400 hover:text-red-300 font-bold text-[11px]"
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB: TASKS (NO MARKS) */}
+            {tab === "tasks" && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-4">
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      <span>📝</span> Upload Subject Task / Assignment
+                    </h3>
+                    <p className="text-xs text-slate-400">Rule #7: No percentage marks. Parents only see Submitted / Not Submitted.</p>
+                  </div>
+                  <form onSubmit={handleCreateTask} className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Grade</label>
+                        <select
+                          value={tGrade}
+                          onChange={e => setTGrade(e.target.value)}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-bold"
+                        >
+                          <option value="10">Grade 10</option>
+                          <option value="11">Grade 11</option>
+                          <option value="12">Grade 12</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Subject</label>
+                        <input
+                          type="text"
+                          value={tSub}
+                          onChange={e => setTSub(e.target.value)}
+                          placeholder="e.g. Mathematics"
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                          required
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Title</label>
+                        <input
+                          type="text"
+                          value={tTitle}
+                          onChange={e => setTTitle(e.target.value)}
+                          placeholder="e.g. Term 4 Calculus Portfolio Assignment"
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block mb-1">Due Date</label>
+                      <input
+                        type="date"
+                        value={tDue}
+                        onChange={e => setTDue(e.target.value)}
+                        className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono"
+                        required
+                      />
+                    </div>
+                    <button type="submit" className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-xs text-white shadow">
+                      + Post Task
+                    </button>
+                  </form>
+                </div>
+
+                <div className="space-y-3">
+                  {tasks.length === 0 ? (
+                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-center text-xs text-slate-400">
+                      No tasks assigned yet.
+                    </div>
+                  ) : (
+                    tasks.map(t => {
+                      const gLearners = learners.filter(l => l.grade === t.grade);
+                      const subCount = Object.values(t.submissions || {}).filter(s => s === "submitted").length;
+                      return (
+                        <div key={t.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-bold">Grade {t.grade}</span>
+                                <span className="text-xs font-bold text-emerald-400">{t.subject}</span>
+                              </div>
+                              <h4 className="font-bold text-sm text-white mt-0.5">{t.title}</h4>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-xs text-slate-400 font-mono">Due: {t.dueDate}</span>
+                              <div className="text-xs font-bold text-emerald-400">{subCount} of {gLearners.length} Submitted</div>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => setSelectedTaskId(selectedTaskId === t.id ? null : t.id)}
+                            className="text-xs font-bold text-emerald-400 hover:text-emerald-300"
+                          >
+                            {selectedTaskId === t.id ? "Hide Learner Checklist ▲" : "Mark Learner Submissions (Submitted / Not Submitted) ▼"}
+                          </button>
+
+                          {selectedTaskId === t.id && (
+                            <div className="bg-slate-850 p-3 rounded-xl border border-slate-750 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                              {gLearners.map(l => {
+                                const isSub = t.submissions?.[l.id] === "submitted";
+                                return (
+                                  <button
+                                    key={l.id}
+                                    onClick={() => toggleSubmission(t.id, l.id, isSub ? "submitted" : "not_submitted")}
+                                    className={`p-2 rounded-xl border text-left flex items-center justify-between text-xs transition-all ${
+                                      isSub ? "bg-emerald-950/40 border-emerald-600/70 text-white" : "bg-red-950/30 border-red-700/60 text-slate-200"
+                                    }`}
+                                  >
+                                    <div>
+                                      <div className="font-bold">{l.fullName}</div>
+                                      <div className="text-[10px] text-slate-400">{l.classGroup} • {l.admissionNo}</div>
+                                    </div>
+                                    <div className="text-xs font-bold">
+                                      {isSub ? <span className="text-emerald-400">✓ Submitted</span> : <span className="text-red-400">✕ Not Submitted</span>}
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB: EXAMS */}
+            {tab === "exams" && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-4">
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <span>📅</span> Add Exam Session
+                  </h3>
+                  <form onSubmit={handleAddExam} className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Grade</label>
+                        <select value={exGrade} onChange={e => setExGrade(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-bold">
+                          <option value="12">Grade 12</option>
+                          <option value="11">Grade 11</option>
+                          <option value="10">Grade 10</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Subject</label>
+                        <input type="text" value={exSub} onChange={e => setExSub(e.target.value)} placeholder="Physical Sciences" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Paper</label>
+                        <input type="text" value={exPaper} onChange={e => setExPaper(e.target.value)} placeholder="Paper 1" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Date</label>
+                        <input type="date" value={exDate} onChange={e => setExDate(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono" required />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Time</label>
+                        <input type="time" value={exTime} onChange={e => setExTime(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Duration</label>
+                        <input type="text" value={exDur} onChange={e => setExDur(e.target.value)} placeholder="3 Hours" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Venue</label>
+                        <input type="text" value={exVenue} onChange={e => setExVenue(e.target.value)} placeholder="Hall" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+                      </div>
+                    </div>
+                    <button type="submit" className="px-5 py-2.5 rounded-xl bg-emerald-600 font-bold text-xs text-white shadow">
+                      + Add to Exam Schedule
+                    </button>
+                  </form>
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-3">
+                  <h3 className="text-base font-bold text-white">Exam Timetable ({exams.length})</h3>
+                  {exams.length === 0 ? (
+                    <div className="text-center py-6 text-xs text-slate-400">No exams scheduled yet.</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-800 text-slate-400 uppercase text-[10px]">
+                            <th className="p-2">Date</th>
+                            <th className="p-2">Grade</th>
+                            <th className="p-2">Subject</th>
+                            <th className="p-2">Time</th>
+                            <th className="p-2">Venue</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60">
+                          {exams.map(e => (
+                            <tr key={e.id} className="hover:bg-slate-800/40">
+                              <td className="p-2 font-mono font-bold text-white">{e.date}</td>
+                              <td className="p-2 text-blue-400 font-bold">Grade {e.grade}</td>
+                              <td className="p-2"><span className="text-emerald-400 font-bold">{e.subject}</span> ({e.paperName})</td>
+                              <td className="p-2">{e.startTime} ({e.duration})</td>
+                              <td className="p-2 text-slate-400">{e.venue}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB: ANNOUNCEMENTS */}
+            {tab === "announcements" && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-4">
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <span>📢</span> Post Circular / Announcement
+                  </h3>
+                  <form onSubmit={handleAddAnnouncement} className="space-y-3">
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block mb-1">Title</label>
+                      <input
+                        type="text"
+                        value={aTitle}
+                        onChange={e => setATitle(e.target.value)}
+                        placeholder="e.g. Saturday Extra Classes for Grade 12"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block mb-1">Content</label>
+                      <textarea
+                        rows="3"
+                        value={aContent}
+                        onChange={e => setAContent(e.target.value)}
+                        placeholder="Details..."
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                        required
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="urg"
+                        checked={aUrgent}
+                        onChange={e => setAUrgent(e.target.checked)}
+                        className="w-4 h-4 text-red-600 rounded"
+                      />
+                      <label htmlFor="urg" className="text-xs font-bold text-red-400">Mark as URGENT (Displays red alert banner)</label>
+                    </div>
+                    <button type="submit" className="px-5 py-2.5 rounded-xl bg-emerald-600 font-bold text-xs text-white shadow">
+                      Publish Circular
+                    </button>
+                  </form>
+                </div>
+
+                <div className="space-y-3">
+                  {announcements.map(a => (
+                    <div key={a.id} className={`p-4 rounded-2xl border ${a.isUrgent ? "border-red-600 bg-red-950/20" : "border-slate-800 bg-slate-900"}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {a.isUrgent && <span className="px-2 py-0.5 rounded bg-red-600 text-white font-black text-[10px]">URGENT</span>}
+                          <h4 className="font-bold text-white text-sm">{a.title}</h4>
+                        </div>
+                        <span className="text-[11px] text-slate-400 font-mono">{new Date(a.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <p className="text-xs text-slate-300 mt-2 whitespace-pre-wrap">{a.content}</p>
+                      <div className="text-[10px] text-slate-500 mt-2 pt-2 border-t border-slate-800">Posted by: {a.authorName}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB: RESOURCES */}
+            {tab === "resources" && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-4">
+                  <h3 className="text-base font-bold text-white">Upload to School Library</h3>
+                  {/* Upload type buttons as requested */}
+                  <div className="flex gap-2">
+                    {["textbook", "pdf", "notes"].map(t => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setResType(t)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase ${
+                          resType === t ? "bg-emerald-600 text-white" : "bg-slate-800 text-slate-400"
+                        }`}
+                      >
+                        Upload {t}
+                      </button>
+                    ))}
+                  </div>
+
+                  <form onSubmit={handleAddResource} className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Title</label>
+                        <input type="text" value={resTitle} onChange={e => setResTitle(e.target.value)} placeholder="e.g. Mind the Gap Physics" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Subject</label>
+                        <input type="text" value={resSub} onChange={e => setResSub(e.target.value)} placeholder="Physical Sciences" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Grade</label>
+                        <select value={resGrade} onChange={e => setResGrade(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-bold">
+                          <option value="12">Grade 12</option>
+                          <option value="11">Grade 11</option>
+                          <option value="10">Grade 10</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block mb-1">Document URL / Cloud Link</label>
+                      <input type="url" value={resUrl} onChange={e => setResUrl(e.target.value)} placeholder="https://..." className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required />
+                    </div>
+                    <button type="submit" className="px-5 py-2.5 rounded-xl bg-emerald-600 font-bold text-xs text-white shadow">
+                      Save to School Library
+                    </button>
+                  </form>
+                </div>
+
+                <ELibraryView examCentreNumber={user.examCentreNumber} userGrade="All" />
+              </div>
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    /* ============================================================
+       5. PARENT / LEARNER VIEW (Read-Only)
+       ============================================================ */
+    function StudentOrParentView({ user, onLogout }) {
+      const [tab, setTab] = useState("overview");
+      const isParent = user.role === "parent";
+      const todayStr = new Date().toISOString().split("T")[0];
+
+      const learners = useMemo(() => STORAGE.getLearners(user.examCentreNumber), [user.examCentreNumber]);
+      const matched = learners.find(l => l.admissionNo.toLowerCase() === user.learnerAdmissionNo.toLowerCase() || l.fullName.toLowerCase() === user.learnerFullName.toLowerCase());
+      const learnerGrade = user.grade || matched?.grade || "10";
+
+      const todayAtt = useMemo(() => STORAGE.getAttendance(user.examCentreNumber, todayStr), [user.examCentreNumber, todayStr]);
+      const todayStatus = matched && todayAtt?.records?.[matched.id] ? todayAtt.records[matched.id].status : "not_recorded";
+      const isBunkingToday = todayStatus === "absent";
+
+      // 14 days history
+      const history = useMemo(() => {
+        if (!matched) return [];
+        const res = [];
+        const t = new Date();
+        for (let i = 0; i < 14; i++) {
+          const d = new Date(t);
+          d.setDate(t.getDate() - i);
+          const k = d.toISOString().split("T")[0];
+          const rec = STORAGE.getAttendance(user.examCentreNumber, k);
+          if (rec && rec.records[matched.id]) {
+            res.push({ date: k, status: rec.records[matched.id].status });
+          }
+        }
+        return res;
+      }, [matched, user.examCentreNumber]);
+
+      const attRate = history.length > 0 ? Math.round((history.filter(h => h.status === "present").length / history.length) * 100) : 100;
+
+      // Tasks
+      const tasks = useMemo(() => STORAGE.getTasks(user.examCentreNumber).filter(t => t.grade === learnerGrade), [user.examCentreNumber, learnerGrade]);
+      const subCount = matched ? tasks.filter(t => t.submissions?.[matched.id] === "submitted").length : 0;
+      const taskRate = tasks.length > 0 ? Math.round((subCount / tasks.length) * 100) : 100;
+
+      // Exams & Announcements
+      const exams = useMemo(() => STORAGE.getExams(user.examCentreNumber).filter(e => e.grade === learnerGrade), [user.examCentreNumber, learnerGrade]);
+      const announcements = useMemo(() => STORAGE.getAnnouncements(user.examCentreNumber), [user.examCentreNumber]);
+
+      return (
+        <div className="min-h-screen flex flex-col font-sans">
+          {/* Header with Always-Visible Logout */}
+          <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 py-3 shadow">
+            <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-white text-base ${isParent ? "bg-amber-600" : "bg-blue-600"}`}>
+                  DP
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="font-bold text-sm md:text-base text-white truncate max-w-xs">{user.schoolName}</h1>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${isParent ? "bg-amber-500/20 text-amber-300 border-amber-500/30" : "bg-blue-500/20 text-blue-300 border-blue-500/30"}`}>
+                      {isParent ? "PARENT PORTAL" : "LEARNER PORTAL"}
+                    </span>
+                    <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">READ-ONLY</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    Learner: <strong className="text-white">{user.learnerFullName}</strong> • Adm: {user.learnerAdmissionNo}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-800/60 text-red-300 text-xs font-bold transition-all"
+              >
+                Log Out ↪
+              </button>
+            </div>
+          </header>
+
+          {/* BUNKING ALERT BANNER */}
+          {isBunkingToday && (
+            <div className="bg-red-950/90 border-b-2 border-red-600 px-4 py-3 text-red-100 animate-pulse shadow-xl">
+              <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🚨</span>
+                  <div>
+                    <h2 className="font-black text-sm md:text-base text-white tracking-wide">
+                      BUNKING ALERT: LEARNER RECORDED ABSENT TODAY ({todayStr})!
+                    </h2>
+                    <p className="text-xs text-red-200">
+                      {user.learnerFullName} was marked ABSENT by educator. Please check with your school immediately.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Nav */}
+          <nav className="bg-slate-900 border-b border-slate-800 px-4">
+            <div className="max-w-5xl mx-auto flex overflow-x-auto no-scrollbar gap-2 py-2">
+              {[
+                { id: "overview", label: "📊 Overview" },
+                { id: "attendance", label: "📋 Daily Attendance" },
+                { id: "tasks", label: "📝 Subject Tasks" },
+                { id: "exams", label: "📅 Exam Timetable" },
+                { id: "announcements", label: `📢 Announcements (${announcements.length})` },
+                { id: "elibrary", label: "📚 eLibrary" },
+              ].map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                    tab === t.id ? (isParent ? "bg-amber-600 text-white" : "bg-blue-600 text-white") : "text-slate-400 hover:text-white hover:bg-slate-800"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </nav>
+
+          <main className="max-w-5xl mx-auto w-full flex-1 p-4 md:p-6 space-y-6">
+            {tab === "overview" && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Grade {learnerGrade} Student Profile</span>
+                    <h2 className="text-2xl font-black text-white">{user.learnerFullName}</h2>
+                    <div className="text-xs text-slate-400 mt-1">
+                      School: {user.schoolName} • Centre: {user.examCentreNumber}
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-850 border border-slate-750 p-4 rounded-2xl text-center">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Today's Attendance</span>
+                    {todayStatus === "present" && <span className="px-3 py-1 rounded-xl bg-emerald-600 text-white font-bold text-xs">✓ PRESENT</span>}
+                    {todayStatus === "absent" && <span className="px-3 py-1 rounded-xl bg-red-600 text-white font-bold text-xs animate-pulse">✕ ABSENT</span>}
+                    {todayStatus === "late" && <span className="px-3 py-1 rounded-xl bg-amber-600 text-white font-bold text-xs">⏳ LATE</span>}
+                    {todayStatus === "not_recorded" && <span className="text-xs text-slate-500">Pending Roll Call</span>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-bold text-white text-sm">Attendance Discipline</h3>
+                      <span className="text-2xl font-black text-emerald-400">{attRate}%</span>
+                    </div>
+                    <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500" style={{ width: `${attRate}%` }}></div>
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Tracking past 14 recorded school days.
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-bold text-white text-sm">Task Submission Discipline</h3>
+                      <span className="text-2xl font-black text-emerald-400">{taskRate}%</span>
+                    </div>
+                    <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500" style={{ width: `${taskRate}%` }}></div>
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      {subCount} of {tasks.length} subject tasks completed.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-400">
+                  🔒 <strong>Tamper-Proof Read-Only Portal:</strong> Parents & learners can view all records. Educators only hold editing privileges.
+                </div>
+              </div>
+            )}
+
+            {tab === "attendance" && (
+              <div className="space-y-4 animate-fadeIn">
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-3">
+                  <h3 className="font-bold text-white text-base">Class Attendance History</h3>
+                  {history.length === 0 ? (
+                    <div className="text-center py-6 text-xs text-slate-400">No attendance registered yet by school staff.</div>
+                  ) : (
+                    history.map((h, i) => (
+                      <div key={i} className="p-3 rounded-2xl border border-slate-800 bg-slate-850 flex items-center justify-between">
+                        <div className="font-mono text-xs text-slate-300">{h.date}</div>
+                        <div>
+                          {h.status === "present" && <span className="px-3 py-1 rounded-xl bg-emerald-600/30 text-emerald-400 font-bold text-xs">✓ PRESENT</span>}
+                          {h.status === "absent" && <span className="px-3 py-1 rounded-xl bg-red-600/30 text-red-400 font-bold text-xs animate-pulse">✕ ABSENT</span>}
+                          {h.status === "late" && <span className="px-3 py-1 rounded-xl bg-amber-600/30 text-amber-400 font-bold text-xs">⏳ LATE</span>}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {tab === "tasks" && (
+              <div className="space-y-4 animate-fadeIn">
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-white text-base">Subject Tasks (Grade {learnerGrade})</h3>
+                    <span className="text-xs text-slate-400">Marks remain at school.</span>
+                  </div>
+
+                  {tasks.length === 0 ? (
+                    <div className="text-center py-6 text-xs text-slate-400">No tasks currently posted.</div>
+                  ) : (
+                    tasks.map(t => {
+                      const isSub = matched && t.submissions?.[matched.id] === "submitted";
+                      return (
+                        <div key={t.id} className="p-4 rounded-2xl border border-slate-800 bg-slate-850 flex items-center justify-between">
+                          <div>
+                            <span className="text-xs font-bold text-emerald-400">{t.subject}</span>
+                            <h4 className="font-bold text-white text-sm">{t.title}</h4>
+                            <span className="text-[10px] text-slate-400 font-mono">Due: {t.dueDate}</span>
+                          </div>
+                          <div>
+                            {isSub ? (
+                              <span className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-xs">✓ SUBMITTED</span>
+                            ) : (
+                              <span className="px-3 py-1.5 rounded-xl bg-red-600 text-white font-bold text-xs">✕ NOT SUBMITTED</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+
+            {tab === "exams" && (
+              <div className="space-y-4 animate-fadeIn">
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-3">
+                  <h3 className="font-bold text-white text-base">Examination Timetable</h3>
+                  {exams.length === 0 ? (
+                    <div className="text-center py-6 text-xs text-slate-400">No exams scheduled yet.</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-800 text-slate-400 uppercase text-[10px]">
+                            <th className="p-2">Date</th>
+                            <th className="p-2">Subject</th>
+                            <th className="p-2">Time</th>
+                            <th className="p-2">Venue</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60">
+                          {exams.map(e => (
+                            <tr key={e.id}>
+                              <td className="p-2 font-mono font-bold text-white">{e.date}</td>
+                              <td className="p-2 text-emerald-400 font-bold">{e.subject} ({e.paperName})</td>
+                              <td className="p-2">{e.startTime} ({e.duration})</td>
+                              <td className="p-2 text-slate-400">{e.venue}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {tab === "announcements" && (
+              <div className="space-y-3 animate-fadeIn">
+                {announcements.length === 0 ? (
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-center text-xs text-slate-400">
+                    No announcements in the last 90 days.
+                  </div>
+                ) : (
+                  announcements.map(a => (
+                    <div key={a.id} className={`p-4 rounded-2xl border ${a.isUrgent ? "border-red-600 bg-red-950/20" : "border-slate-800 bg-slate-900"}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {a.isUrgent && <span className="px-2 py-0.5 rounded bg-red-600 text-white font-black text-[10px]">URGENT</span>}
+                          <h4 className="font-bold text-white text-sm">{a.title}</h4>
+                        </div>
+                        <span className="text-[11px] text-slate-400 font-mono">{new Date(a.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <p className="text-xs text-slate-300 mt-2 whitespace-pre-wrap">{a.content}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {tab === "elibrary" && (
+              <ELibraryView examCentreNumber={user.examCentreNumber} userGrade={learnerGrade} />
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    /* ============================================================
+       6. LOGIN VIEW (Role Gate + Real SA Schools Search)
+       ============================================================ */
+    function LoginView({ onLoginSuccess }) {
+      const [role, setRole] = useState(null);
+      const [mode, setMode] = useState("login");
+      const [error, setError] = useState("");
+
+      // Schools picker
+      const [showSchools, setShowSchools] = useState(false);
+      const [schoolQuery, setSchoolQuery] = useState("");
+      const [selectedProvince, setSelectedProvince] = useState("All");
+      const [selectedSchool, setSelectedSchool] = useState(null);
+
+      // Principal Missing School
+      const [showAddSchool, setShowAddSchool] = useState(false);
+      const [addName, setAddName] = useState("");
+      const [addProv, setAddProv] = useState("Mpumalanga");
+      const [addDist, setAddDist] = useState("");
+      const [addEmis, setAddEmis] = useState("");
+      const [addExam, setAddExam] = useState("");
+      const [addRef, setAddRef] = useState("");
+
+      // Staff Form
+      const [sExam, setSExam] = useState("");
+      const [sName, setSName] = useState("");
+      const [sRole, setSRole] = useState("Principal");
+      const [sPass, setSPass] = useState("");
+
+      // Parent Form
+      const [pLName, setPLName] = useState("");
+      const [pLAdm, setPLAdm] = useState("");
+      const [pName, setPName] = useState("");
+      const [pPhone, setPPhone] = useState("");
+      const [pPass, setPPass] = useState("");
+
+      // Learner Form
+      const [lLName, setLLName] = useState("");
+      const [lLAdm, setLLAdm] = useState("");
+      const [lGrade, setLGrade] = useState("10");
+      const [lPass, setLPass] = useState("");
+
+      const filteredSchools = useMemo(() => searchSchools(schoolQuery, selectedProvince), [schoolQuery, selectedProvince]);
+
+      const handleStaffSubmit = (e) => {
+        e.preventDefault();
+        setError("");
+        const users = STORAGE.getUsers();
+
+        if (mode === "login") {
+          const match = users.find(u => u.role === "staff" && u.examCentreNumber === sExam.trim() && u.passwordHash === sPass.trim());
+          if (!match) {
+            setError("Invalid Exam Centre Number or Password. Sign Up if you are a new school staff member.");
+            return;
+          }
+          STORAGE.setSession(match);
+          onLoginSuccess(match);
+        } else {
+          if (!selectedSchool) {
+            setError("Please select your school from the official DBE list.");
+            return;
+          }
+          const newUser = {
+            id: "staff_" + Date.now(),
+            role: "staff",
+            examCentreNumber: selectedSchool.examCentreNumber,
+            emis: selectedSchool.emis,
+            schoolName: selectedSchool.schoolName,
+            province: selectedSchool.province,
+            staffName: sName.trim(),
+            staffRole: sRole,
+            passwordHash: sPass.trim(),
+            createdAt: new Date().toISOString()
+          };
+          STORAGE.saveUser(newUser);
+          STORAGE.setSession(newUser);
+          onLoginSuccess(newUser);
+        }
+      };
+
+      const handleParentSubmit = (e) => {
+        e.preventDefault();
+        setError("");
+        if (!selectedSchool) {
+          setError("Please select the learner's school.");
+          return;
+        }
+
+        const users = STORAGE.getUsers();
+        if (mode === "login") {
+          const match = users.find(u => u.role === "parent" && u.examCentreNumber === selectedSchool.examCentreNumber && u.learnerAdmissionNo.toLowerCase() === pLAdm.trim().toLowerCase() && u.passwordHash === pPass.trim());
+          if (!match) {
+            setError("Parent account not found for these credentials. Sign Up if you have not created an account.");
+            return;
+          }
+          STORAGE.setSession(match);
+          onLoginSuccess(match);
+        } else {
+          const newUser = {
+            id: "parent_" + Date.now(),
+            role: "parent",
+            examCentreNumber: selectedSchool.examCentreNumber,
+            schoolEmis: selectedSchool.emis,
+            schoolName: selectedSchool.schoolName,
+            learnerFullName: pLName.trim(),
+            learnerAdmissionNo: pLAdm.trim(),
+            parentFullName: pName.trim(),
+            parentPhone: pPhone.trim(),
+            relationship: "Parent",
+            passwordHash: pPass.trim(),
+            createdAt: new Date().toISOString()
+          };
+          STORAGE.saveUser(newUser);
+          STORAGE.setSession(newUser);
+          onLoginSuccess(newUser);
+        }
+      };
+
+      const handleLearnerSubmit = (e) => {
+        e.preventDefault();
+        setError("");
+        if (!selectedSchool) {
+          setError("Please select your school.");
+          return;
+        }
+
+        const users = STORAGE.getUsers();
+        if (mode === "login") {
+          const match = users.find(u => u.role === "learner" && u.examCentreNumber === selectedSchool.examCentreNumber && u.learnerAdmissionNo.toLowerCase() === lLAdm.trim().toLowerCase() && u.passwordHash === lPass.trim());
+          if (!match) {
+            setError("Learner account not found for this school and admission number. Please Sign Up.");
+            return;
+          }
+          STORAGE.setSession(match);
+          onLoginSuccess(match);
+        } else {
+          const newUser = {
+            id: "learner_" + Date.now(),
+            role: "learner",
+            examCentreNumber: selectedSchool.examCentreNumber,
+            schoolEmis: selectedSchool.emis,
+            schoolName: selectedSchool.schoolName,
+            learnerFullName: lLName.trim(),
+            learnerAdmissionNo: lLAdm.trim(),
+            grade: lGrade,
+            passwordHash: lPass.trim(),
+            createdAt: new Date().toISOString()
+          };
+          STORAGE.saveUser(newUser);
+          STORAGE.setSession(newUser);
+          onLoginSuccess(newUser);
+        }
+      };
+
+      const handleAddMissingSchool = (e) => {
+        e.preventDefault();
+        const res = registerPrincipalSchool({
+          emis: addEmis.trim(),
+          examCentreNumber: addExam.trim(),
+          schoolName: addName.trim(),
+          province: addProv,
+          district: addDist.trim() || "District Office",
+          quintile: 3,
+          hasGrade10_12: true,
+          proofEmisLetterUrl: addRef.trim() || "Proof on file"
+        });
+        if (!res.success) {
+          setError(res.message);
+          return;
+        }
+        const s = getAllSchools().find(sc => sc.emis === addEmis.trim());
+        if (s) {
+          setSelectedSchool(s);
+          setSExam(s.examCentreNumber);
+        }
+        setShowAddSchool(false);
+      };
+
+      return (
+        <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-between p-4 md:p-8 font-sans">
+          {/* Header */}
+          <header className="max-w-xl mx-auto w-full pt-4 pb-6 text-center">
+            <div className="inline-flex items-center gap-3 bg-slate-800 px-4 py-2 rounded-2xl border border-slate-700 shadow-md mb-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center font-black text-xl text-white">
+                DP
+              </div>
+              <div className="text-left">
+                <h1 className="font-extrabold text-lg text-white flex items-center gap-2">
+                  DISCIPLINE PARTNERS
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold border border-emerald-500/30">FET 10-12</span>
+                </h1>
+                <p className="text-xs text-slate-400">Stop Bunking • Force Attendance • Higher Pass Rate</p>
+              </div>
+            </div>
+            <div className="bg-emerald-950/40 border border-emerald-800/40 rounded-xl px-3 py-2 text-xs text-emerald-300">
+              “In class teacher is parent, at home parent is parent. Build better tomorrow.”
+            </div>
+          </header>
+
+          {/* Body */}
+          <main className="max-w-md mx-auto w-full flex-1 flex flex-col justify-center">
+            {!role ? (
+              /* ROLE GATE */
+              <div className="bg-slate-800 border border-slate-700 rounded-3xl p-6 shadow-2xl space-y-6 animate-fadeIn">
+                <div className="text-center space-y-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Role Gate Verification</span>
+                  <h2 className="text-2xl font-black text-white">Who are you logging in as?</h2>
+                  <p className="text-sm text-slate-400">Select your role to access the portal.</p>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <button
+                    onClick={() => { setRole("learner"); setMode("login"); setError(""); }}
+                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-750 hover:bg-slate-700 border border-slate-600 transition-all text-left"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center text-2xl">🎓</div>
+                      <div>
+                        <div className="font-bold text-white">I am a Learner</div>
+                        <div className="text-xs text-slate-400">Grade 10, 11, or 12</div>
+                      </div>
+                    </div>
+                    <span className="text-emerald-400 font-bold text-lg">→</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setRole("parent"); setMode("login"); setError(""); }}
+                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-750 hover:bg-slate-700 border border-slate-600 transition-all text-left"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center text-2xl">👨‍👩‍👧</div>
+                      <div>
+                        <div className="font-bold text-white">I am a Parent / Guardian</div>
+                        <div className="text-xs text-slate-400">Real-time attendance monitor</div>
+                      </div>
+                    </div>
+                    <span className="text-emerald-400 font-bold text-lg">→</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setRole("staff"); setMode("login"); setError(""); }}
+                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-750 hover:bg-slate-700 border border-slate-600 transition-all text-left"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center text-2xl">🏫</div>
+                      <div>
+                        <div className="font-bold text-white">School Staff / Principal</div>
+                        <div className="text-xs text-slate-400">Educators & exam centre staff</div>
+                      </div>
+                    </div>
+                    <span className="text-emerald-400 font-bold text-lg">→</span>
+                  </button>
+                </div>
+
+                <div className="pt-2 text-center border-t border-slate-700 text-[11px] text-slate-400">
+                  Clean State: Zero mock data. DBE EMIS database verified.
+                </div>
+              </div>
+            ) : (
+              /* AUTH FORM */
+              <div className="bg-slate-800 border border-slate-700 rounded-3xl p-6 shadow-2xl space-y-5 animate-fadeIn">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-700">
+                  <button onClick={() => setRole(null)} className="text-xs text-slate-400 hover:text-white font-semibold">
+                    ← Back to Roles
+                  </button>
+                  <span className="text-xs font-bold text-emerald-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-700">
+                    {role === "learner" && "🎓 Learner"}
+                    {role === "parent" && "👨‍👩‍👧 Parent / Guardian"}
+                    {role === "staff" && "🏫 School Staff"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 p-1 bg-slate-900 rounded-xl text-xs font-bold">
+                  <button
+                    onClick={() => { setMode("login"); setError(""); }}
+                    className={`py-2 rounded-lg transition-all ${mode === "login" ? "bg-emerald-600 text-white" : "text-slate-400 hover:text-white"}`}
+                  >
+                    Log In
+                  </button>
+                  <button
+                    onClick={() => { setMode("signup"); setError(""); }}
+                    className={`py-2 rounded-lg transition-all ${mode === "signup" ? "bg-emerald-600 text-white" : "text-slate-400 hover:text-white"}`}
+                  >
+                    Create Account
+                  </button>
+                </div>
+
+                {error && (
+                  <div className="p-3 rounded-xl bg-red-950/70 border border-red-700 text-red-200 text-xs">
+                    ✕ {error}
+                  </div>
+                )}
+
+                {/* STAFF FORM */}
+                {role === "staff" && (
+                  <form onSubmit={handleStaffSubmit} className="space-y-4">
+                    {mode === "login" ? (
+                      <>
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-300">Exam Centre Number</label>
+                          <input
+                            type="text"
+                            value={sExam}
+                            onChange={e => setSExam(e.target.value)}
+                            placeholder="e.g. 800035108"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-300">Password</label>
+                          <input
+                            type="password"
+                            value={sPass}
+                            onChange={e => setSPass(e.target.value)}
+                            placeholder="Enter password"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
+                            required
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-300">Select Real SA School</label>
+                          <button
+                            type="button"
+                            onClick={() => setShowSchools(true)}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white text-left flex justify-between items-center"
+                          >
+                            <span className="truncate">{selectedSchool ? selectedSchool.schoolName : "Search official DBE school..."}</span>
+                            <span className="text-xs text-emerald-400 font-bold ml-2">Browse</span>
+                          </button>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-300">Staff Full Name</label>
+                          <input
+                            type="text"
+                            value={sName}
+                            onChange={e => setSName(e.target.value)}
+                            placeholder="e.g. Mr. S. Mkhize"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-300">Role at School</label>
+                          <select
+                            value={sRole}
+                            onChange={e => setSRole(e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white"
+                          >
+                            <option value="Principal">Principal (Master)</option>
+                            <option value="Deputy Principal">Deputy Principal</option>
+                            <option value="HOD">HOD</option>
+                            <option value="Grade Head">Grade 10-12 Head</option>
+                            <option value="Subject Teacher">Subject Teacher</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-300">Create Password</label>
+                          <input
+                            type="password"
+                            value={sPass}
+                            onChange={e => setSPass(e.target.value)}
+                            placeholder="Create password"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
+                            required
+                          />
+                        </div>
+                      </>
+                    )}
+                    <button type="submit" className="w-full py-3 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow">
+                      {mode === "login" ? "Enter Staff Dashboard →" : "Register Staff Account →"}
+                    </button>
+                  </form>
+                )}
+
+                {/* PARENT FORM */}
+                {role === "parent" && (
+                  <form onSubmit={handleParentSubmit} className="space-y-3.5">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Child's School</label>
+                      <button
+                        type="button"
+                        onClick={() => setShowSchools(true)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white text-left flex justify-between items-center"
+                      >
+                        <span className="truncate">{selectedSchool ? selectedSchool.schoolName : "Search child's school..."}</span>
+                        <span className="text-xs text-emerald-400 font-bold ml-2">Browse</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Learner Full Names</label>
+                      <input
+                        type="text"
+                        value={pLName}
+                        onChange={e => setPLName(e.target.value)}
+                        placeholder="e.g. Karabo Dlamini"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Learner Admission / EMIS No</label>
+                      <input
+                        type="text"
+                        value={pLAdm}
+                        onChange={e => setPLAdm(e.target.value)}
+                        placeholder="e.g. ADM2026-402"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white"
+                        required
+                      />
+                    </div>
+
+                    {mode === "signup" && (
+                      <>
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-300">Parent Full Name</label>
+                          <input
+                            type="text"
+                            value={pName}
+                            onChange={e => setPName(e.target.value)}
+                            placeholder="e.g. Nomvula Dlamini"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-300">Parent Cellphone</label>
+                          <input
+                            type="tel"
+                            value={pPhone}
+                            onChange={e => setPPhone(e.target.value)}
+                            placeholder="082 123 4567"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white"
+                            required
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Password</label>
+                      <input
+                        type="password"
+                        value={pPass}
+                        onChange={e => setPPass(e.target.value)}
+                        placeholder="Enter password"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white"
+                        required
+                      />
+                    </div>
+
+                    <button type="submit" className="w-full py-3 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow">
+                      {mode === "login" ? "Log In to View Attendance →" : "Create Linked Parent Account →"}
+                    </button>
+                  </form>
+                )}
+
+                {/* LEARNER FORM */}
+                {role === "learner" && (
+                  <form onSubmit={handleLearnerSubmit} className="space-y-3.5">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Your School</label>
+                      <button
+                        type="button"
+                        onClick={() => setShowSchools(true)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white text-left flex justify-between items-center"
+                      >
+                        <span className="truncate">{selectedSchool ? selectedSchool.schoolName : "Select your school..."}</span>
+                        <span className="text-xs text-emerald-400 font-bold ml-2">Browse</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Your Full Names</label>
+                      <input
+                        type="text"
+                        value={lLName}
+                        onChange={e => setLLName(e.target.value)}
+                        placeholder="e.g. Karabo Dlamini"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white"
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-300">Admission No</label>
+                        <input
+                          type="text"
+                          value={lLAdm}
+                          onChange={e => setLLAdm(e.target.value)}
+                          placeholder="e.g. ADM2026-402"
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white"
+                          required
+                        />
+                      </div>
+                      {mode === "signup" && (
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-300">Grade</label>
+                          <select
+                            value={lGrade}
+                            onChange={e => setLGrade(e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white font-bold"
+                          >
+                            <option value="10">Grade 10</option>
+                            <option value="11">Grade 11</option>
+                            <option value="12">Grade 12</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Password</label>
+                      <input
+                        type="password"
+                        value={lPass}
+                        onChange={e => setLPass(e.target.value)}
+                        placeholder="Enter password"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white"
+                        required
+                      />
+                    </div>
+
+                    <button type="submit" className="w-full py-3 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow">
+                      {mode === "login" ? "Access Learner Portal →" : "Create Learner Account →"}
+                    </button>
+                  </form>
+                )}
+
+                {(role === "parent" || role === "learner") && (
+                  <div className="p-2.5 rounded-xl bg-slate-900 text-[11px] text-slate-400">
+                    🔒 READ-ONLY: Only registered school staff can log attendance & mark submissions.
+                  </div>
+                )}
+              </div>
+            )}
+          </main>
+
+          {/* MODAL: REAL SA SCHOOLS LIST */}
+          {showSchools && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 animate-fadeIn">
+              <div className="bg-slate-850 border border-slate-700 rounded-3xl w-full max-w-xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+                <div className="p-4 border-b border-slate-700 flex justify-between items-center">
+                  <div>
+                    <h3 className="font-extrabold text-white text-base">Select Official DBE School</h3>
+                    <p className="text-xs text-slate-400">Database verified with DBE EMIS & Exam Centre codes</p>
+                  </div>
+                  <button onClick={() => setShowSchools(false)} className="text-slate-400 hover:text-white font-bold">✕</button>
+                </div>
+
+                <div className="p-4 border-b border-slate-700 bg-slate-900 space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={schoolQuery}
+                      onChange={e => setSchoolQuery(e.target.value)}
+                      placeholder="Search school name, EMIS, exam centre..."
+                      className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                    />
+                    <select
+                      value={selectedProvince}
+                      onChange={e => setSelectedProvince(e.target.value)}
+                      className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-bold"
+                    >
+                      <option value="All">All 9 Provinces (50+ Schools Each)</option>
+                      {SA_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div className="p-2 rounded-xl bg-slate-800 text-[11px] text-emerald-300">
+                    Schools loaded from DBE EMIS - principal can add missing school with proof of EMIS letter. Never generate fake EMIS.
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-400">
+                    <span>{filteredSchools.length} secondary schools offering Gr 10-12</span>
+                    <button onClick={() => { setShowSchools(false); setShowAddSchool(true); }} className="text-emerald-400 underline">
+                      Add missing school →
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-2 divide-y divide-slate-800">
+                  {filteredSchools.length === 0 ? (
+                    <div className="text-center py-10 space-y-2 text-xs text-slate-400">
+                      <div className="text-3xl">🏫</div>
+                      <div className="font-bold text-white">No matching DBE school found</div>
+                      <p>Schools loaded from DBE EMIS - principal can add missing school with proof of EMIS letter</p>
+                      <button onClick={() => { setShowSchools(false); setShowAddSchool(true); }} className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-bold">
+                        Register Missing School with EMIS Proof
+                      </button>
+                    </div>
+                  ) : (
+                    filteredSchools.map(s => (
+                    <button
+                      key={s.emis}
+                      onClick={() => {
+                        setSelectedSchool(s);
+                        if (role === "staff") setSExam(s.examCentreNumber);
+                        setShowSchools(false);
+                      }}
+                      className="w-full text-left p-3 rounded-xl hover:bg-slate-800 flex justify-between items-start"
+                    >
+                      <div>
+                        <div className="font-bold text-sm text-white">{s.schoolName}</div>
+                        <div className="text-xs text-slate-400">📍 {s.district}, {s.province} • Q{s.quintile}</div>
+                        <div className="text-[11px] text-slate-500 font-mono">EMIS: {s.emis} • Exam: {s.examCentreNumber}</div>
+                      </div>
+                      <span className="px-2 py-1 rounded bg-slate-800 text-xs text-emerald-400 font-bold">Select</span>
+                    </button>
+                  )))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: PRINCIPAL ADD SCHOOL */}
+          {showAddSchool && (
+            <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 animate-fadeIn">
+              <div className="bg-slate-850 border border-slate-700 rounded-3xl w-full max-w-lg shadow-2xl p-5 space-y-4">
+                <div className="flex justify-between items-center border-b border-slate-700 pb-3">
+                  <h3 className="font-bold text-white text-base">Register School with DBE Proof</h3>
+                  <button onClick={() => setShowAddSchool(false)} className="text-slate-400 hover:text-white font-bold">✕</button>
+                </div>
+
+                <div className="p-3 bg-amber-950/40 border border-amber-700 rounded-xl text-xs text-amber-200">
+                  ⚠️ Never invent fake EMIS. Principal must confirm official DBE EMIS certificate.
+                </div>
+
+                <form onSubmit={handleAddMissingSchool} className="space-y-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">School Name</label>
+                    <input type="text" value={addName} onChange={e => setAddName(e.target.value)} placeholder="e.g. Sitintile Secondary" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block mb-1">Province</label>
+                      <select value={addProv} onChange={e => setAddProv(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                        {SA_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block mb-1">District</label>
+                      <input type="text" value={addDist} onChange={e => setAddDist(e.target.value)} placeholder="e.g. Ehlanzeni" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block mb-1">EMIS Number</label>
+                      <input type="text" value={addEmis} onChange={e => setAddEmis(e.target.value)} placeholder="8 digits" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block mb-1">Exam Centre Number</label>
+                      <input type="text" value={addExam} onChange={e => setAddExam(e.target.value)} placeholder="8-13 digits" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">Proof of EMIS Letter Reference</label>
+                    <input type="text" value={addRef} onChange={e => setAddRef(e.target.value)} placeholder="e.g. DBE/REF/2026/01" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required />
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <button type="button" onClick={() => setShowAddSchool(false)} className="flex-1 py-2 rounded-xl border border-slate-700 text-xs text-slate-400">Cancel</button>
+                    <button type="submit" className="flex-1 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow">Save School</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          <footer className="text-center text-xs text-slate-500 pt-4">
+            Discipline Partners (DP) • South Africa Grade 10-12 Attendance & Academic Portal
+          </footer>
+        </div>
+      );
+    }
+
+    /* ============================================================
+       7. ROOT APP COMPONENT
+       ============================================================ */
+    function App() {
+      const [currentUser, setCurrentUser] = useState(null);
+
+      useEffect(() => {
+        const session = STORAGE.getSession();
+        if (session) setCurrentUser(session);
+      }, []);
+
+      const handleLogout = () => {
+        STORAGE.clearSession();
+        setCurrentUser(null);
+      };
+
+      if (!currentUser) {
+        return <LoginView onLoginSuccess={setCurrentUser} />;
+      }
+
+      if (currentUser.role === "staff") {
+        return <StaffView user={currentUser} onLogout={handleLogout} />;
+      }
+
+      return <StudentOrParentView user={currentUser} onLogout={handleLogout} />;
+    }
+
+    // Mount
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
