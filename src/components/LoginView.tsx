@@ -1252,14 +1252,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
           </div>
         </div>
       )}
-
-      {/* Footer Branding */}
-      <footer className="max-w-md mx-auto w-full pt-6 pb-2 text-center text-xs text-slate-500">
-        Discipline Partners (DP) • Stopping Bunking in South Africa • Data-Light Architecture
-      </footer>
-    </div>
-  );
-};<div className="text-center py-3">
+<div className="text-center py-3">
 <button
 onClick={()=>{
 const id=prompt("Enter your ID or Email:");
@@ -1274,3 +1267,10 @@ alert("Reset! New password: 123456 for "+u.name);
 className="text-sm text-blue-600 underline"
 >Forgot Password? Click to Reset to 123456</button>
 </div>
+      {/* Footer Branding */}
+      <footer className="max-w-md mx-auto w-full pt-6 pb-2 text-center text-xs text-slate-500">
+        Discipline Partners (DP) • Stopping Bunking in South Africa • Data-Light Architecture
+      </footer>
+    </div>
+  );
+};
