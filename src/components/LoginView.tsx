@@ -1259,4 +1259,18 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
       </footer>
     </div>
   );
-};
+};<div className="text-center py-3">
+<button
+onClick={()=>{
+const id=prompt("Enter your ID or Email:");
+if(!id)return;
+const users=JSON.parse(localStorage.getItem("dp_users")||"[]");
+const u=users.find((x:any)=>x.idNumber===id||x.email===id||x.learnerId===id);
+if(!u){alert("Not found!");return;}
+u.password="123456";
+localStorage.setItem("dp_users",JSON.stringify(users));
+alert("Reset! New password: 123456 for "+u.name);
+}}
+className="text-sm text-blue-600 underline"
+>Forgot Password? Click to Reset to 123456</button>
+</div>
