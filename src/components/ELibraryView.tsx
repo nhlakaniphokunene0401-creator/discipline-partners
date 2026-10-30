@@ -97,10 +97,6 @@ export const ELibraryView: React.FC<ELibraryViewProps> = ({
               <span>↗</span>
             </a>
           </div>
-        </div>
-          </div>
-        </div>
-      </div>
 
       {/* School Uploaded Textbooks, Notes & PDFs */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-4">
