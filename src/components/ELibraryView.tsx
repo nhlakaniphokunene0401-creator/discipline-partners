@@ -98,37 +98,6 @@ export const ELibraryView: React.FC<ELibraryViewProps> = ({
             </a>
           </div>
         </div>
-
-        {/* DBE Past Papers */}
-        <div className="bg-gradient-to-br from-emerald-950/70 via-slate-900 to-slate-900 border border-emerald-700/50 rounded-3xl p-5 shadow-md flex flex-col justify-between space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase tracking-wider border border-emerald-500/30">
-                DBE National Examinations
-              </span>
-              <span className="text-emerald-400 text-sm font-bold">Official Papers</span>
-            </div>
-            <h3 className="text-lg font-black text-white">
-              DBE Grade 12 NSC Past Exam Papers & Memos
-            </h3>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Download past Matric NSC exam papers, answer memorandums, and diagnostic reports to practice exam technique.
-            </p>
-          </div>
-
-          <div className="pt-2 border-t border-emerald-900/60 flex items-center justify-between">
-            <span className="text-[11px] text-slate-400 font-mono truncate max-w-[180px]">
-              education.gov.za
-            </span>
-            <a
-              href="https://www.education.gov.za/Curriculum/Grade-12-Past-Exam-papers"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all active:scale-95"
-            >
-              <span>Open DBE Archive</span>
-              <span>↗</span>
-            </a>
           </div>
         </div>
       </div>
