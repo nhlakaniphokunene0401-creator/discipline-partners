@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { SchoolResource } from "../types";
 import { getResources } from "../data/storage";
 
 interface ELibraryViewProps {
@@ -18,7 +17,7 @@ export const ELibraryView: React.FC<ELibraryViewProps> = ({
 
   const resources = getResources(examCentreNumber);
 
-  const filteredResources = resources.filter((res) => {
+  const filteredResources = resources.filter((res: any) => {
     const matchGrade =
       selectedGrade === "All" || res.grade === selectedGrade;
     const matchSearch =
@@ -53,12 +52,11 @@ export const ELibraryView: React.FC<ELibraryViewProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* School Uploaded Textbooks */}
         {filteredResources.length > 0 ? (
-          filteredResources.map((resource) => (
+          filteredResources.map((resource: any) => (
             <a
               key={resource.id}
-              href={resource.fileUrl}
+              href={resource.fileUrl || resource.file_url || resource.url || resource.link || "#"}
               target="_blank"
               rel="noopener noreferrer"
               className="block border rounded-lg p-4 hover:shadow-md transition"
