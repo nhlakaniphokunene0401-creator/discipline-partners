@@ -1253,20 +1253,30 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
         </div>
       )}
 <div className="text-center py-3">
-<button
-onClick={()=>{
-const id=prompt("Enter your ID or Email:");
-if(!id)return;
-const users=JSON.parse(localStorage.getItem("dp_users")||"[]");
-const u=users.find((x:any)=>x.idNumber===id||x.email===id||x.learnerId===id);
-if(!u){alert("Not found!");return;}
-u.password="123456";
-localStorage.setItem("dp_users",JSON.stringify(users));
-alert("Reset! New password: 123456 for "+u.name);
-}}
-className="text-sm text-blue-600 underline"
->Forgot Password? Click to Reset to 123456</button>
-</div>
+        <button
+          onClick={()=>{
+            const school=prompt("Enter School Name:");
+            if(!school)return;
+            const adm=prompt("Enter Admission Number:");
+            if(!adm)return;
+            const newPass=prompt("Enter NEW Password (min 4 chars):");
+            if(!newPass||newPass.length<4){alert("Password too short!");return;}
+            const users=JSON.parse(localStorage.getItem("dp_users")||"[]");
+            const u=users.find((x:any)=>{
+              const sMatch=(x.school===school||x.schoolName===school||x.saSchoolName===school);
+              const aMatch=(x.admissionNumber===adm||x.learnerId===adm||x.idNumber===adm||x.admNo===adm);
+              return sMatch && aMatch;
+            });
+            if(!u){alert("Not found! Check School Name and Admission Number spelling.");return;}
+            u.password=newPass;
+            localStorage.setItem("dp_users",JSON.stringify(users));
+            alert("Success! Password changed for "+(u.name||"learner")+". Login with new password now.");
+          }}
+          className="text-sm text-blue-600 underline font-medium"
+        >
+          Forgot Password? Reset with School & Admission
+        </button>
+      </div>
       {/* Footer Branding */}
       <footer className="max-w-md mx-auto w-full pt-6 pb-2 text-center text-xs text-slate-500">
         Discipline Partners (DP) • Stopping Bunking in South Africa • Data-Light Architecture
