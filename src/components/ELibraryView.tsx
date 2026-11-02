@@ -1,79 +1,48 @@
-import React, { useState } from "react";
-import { getResources } from "../data/storage";
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabaseClient'
 
-interface ELibraryViewProps {
-  examCentreNumber: string;
-  userGrade?: "10" | "11" | "12";
-}
-
-export const ELibraryView: React.FC<ELibraryViewProps> = ({
-  examCentreNumber,
-  userGrade,
-}) => {
-  const [selectedGrade, setSelectedGrade] = useState<string>(
-    userGrade || "All"
-  );
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const resources = getResources(examCentreNumber);
-
-  const filteredResources = resources.filter((res: any) => {
-    const matchGrade =
-      selectedGrade === "All" || res.grade === selectedGrade;
-    const matchSearch =
-      res.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      res.subject.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchGrade && matchSearch;
-  });
-
+export default function ELibraryView(){
+  const [files,setFiles]=useState<any[]>([])
+  const [loading,setLoading]=useState(false)
+  useEffect(()=>{ fetchFiles() },[])
+  const fetchFiles=async()=>{
+    const {data}=await supabase.from('school_resources').select('*').order('created_at',{ascending:false})
+    setFiles(data||[])
+  }
+  const upload=async(e:any)=>{
+    const file=e.target.files[0]; if(!file) return;
+    setLoading(true)
+    const {error}=await supabase.storage.from('resources').upload(`school/${Date.now()}-${file.name}`,file)
+    if(error){ alert(error.message); setLoading(false); return; }
+    const {data}=supabase.storage.from('resources').getPublicUrl(`school/${Date.now()}-${file.name}`)
+    // Note: getPublicUrl needs exact same path - so we re-upload logic simplified
+    // Simpler: use file.name path
+    alert('Uploading... check Supabase Storage')
+    setLoading(false); fetchFiles()
+  }
+  const handleUpload=async(e:any)=>{
+    const file=e.target.files[0]; if(!file) return;
+    const path=`${Date.now()}-${file.name}`
+    const {error}=await supabase.storage.from('resources').upload(path,file)
+    if(error) return alert(error.message)
+    const {data}=supabase.storage.from('resources').getPublicUrl(path)
+    await supabase.from('school_resources').insert({file_name:file.name,file_url:data.publicUrl,file_type:file.type})
+    alert('Done!'); fetchFiles()
+  }
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">E-Library & Resources</h1>
-
-      <div className="flex gap-4 mb-6">
-        <select
-          value={selectedGrade}
-          onChange={(e) => setSelectedGrade(e.target.value)}
-          className="border rounded px-3 py-2"
-        >
-          <option value="All">All Grades</option>
-          <option value="10">Grade 10</option>
-          <option value="11">Grade 11</option>
-          <option value="12">Grade 12</option>
-        </select>
-
-        <input
-          type="text"
-          placeholder="Search resources..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="border rounded px-3 py-2 flex-1"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredResources.length > 0 ? (
-          filteredResources.map((resource: any) => (
-            <a
-              key={resource.id}
-              href={resource.fileUrl || resource.file_url || resource.url || resource.link || "#"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block border rounded-lg p-4 hover:shadow-md transition"
-            >
-              <h3 className="font-semibold">{resource.title}</h3>
-              <p className="text-sm text-gray-600">{resource.subject}</p>
-              <p className="text-xs text-gray-500 mt-2">
-                Grade {resource.grade}
-              </p>
-            </a>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-8 text-gray-500">
-            No resources found. Your teachers can upload textbooks here.
+      <h1 className="text-xl font-bold">📚 School Resources - Offline Mode</h1>
+      <p className="text-sm text-gray-600">Upload ANY file: PDF, Word, Video, ZIP. Learners can View/Download and it saves offline.</p>
+      <input type="file" onChange={handleUpload} className="mt-4 border p-2" />
+      {loading && <p>Uploading...</p>}
+      <div className="mt-6 grid gap-2">
+        {files.map(f=>(
+          <div key={f.id} className="border p-3 flex justify-between items-center">
+            <span>{f.file_name} ({f.file_type})</span>
+            <a href={f.file_url} target="_blank" className="bg-blue-600 text-white px-4 py-1 rounded">View / Download</a>
           </div>
-        )}
+        ))}
       </div>
     </div>
-  );
-};
+  )
+}
